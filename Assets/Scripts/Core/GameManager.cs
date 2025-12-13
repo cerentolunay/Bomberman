@@ -1,6 +1,23 @@
 using UnityEngine;
+using DPBomberman.Patterns.State;
 
 public class GameManager : MonoBehaviour
 {
-    // TODO: Faz 1'de dolduracaðýz
+    private GameStateMachine stateMachine;
+
+    private void Awake()
+    {
+        stateMachine = new GameStateMachine();
+    }
+
+    private void Start()
+    {
+        
+        stateMachine.ChangeState(new MainMenuState(this, stateMachine));
+    }
+
+    private void Update()
+    {
+        stateMachine.Tick(Time.deltaTime);
+    }
 }
