@@ -59,6 +59,7 @@ public class MapGenerator : MonoBehaviour
         groundTilemap.ClearAllTiles();
         solidTilemap.ClearAllTiles();
         breakableTilemap.ClearAllTiles();
+        hardTilemap?.ClearAllTiles();
 
         System.Random rng = new System.Random(seed);
 
