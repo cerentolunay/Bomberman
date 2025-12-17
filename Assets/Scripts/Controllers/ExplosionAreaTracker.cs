@@ -13,11 +13,16 @@ namespace DPBomberman.Controllers
         [Header("Refs")]
         public Tilemap groundTilemap;
 
+        [Header("VFX")]
+        public GameObject explosionFxPrefab;
+        public Transform vfxParent;
+
         // Ayný hücre ayný anda birden fazla patlama tarafýndan aktif edilebilir.
         // Bu yüzden "kaç patlama aktif etti?" sayaç tutuyoruz.
         private readonly Dictionary<Vector3Int, int> activeCounts = new();
 
-        public bool IsCellDangerous(Vector3Int cell) => activeCounts.TryGetValue(cell, out int c) && c > 0;
+        public bool IsCellDangerous(Vector3Int cell) =>
+            activeCounts.TryGetValue(cell, out int c) && c > 0;
 
         public void ActivateCells(IEnumerable<Vector3Int> cells)
         {
@@ -26,6 +31,20 @@ namespace DPBomberman.Controllers
 
         private IEnumerator ActivateRoutine(IEnumerable<Vector3Int> cells)
         {
+            // VFX spawn (patlama baþladýðý an)
+            if (explosionFxPrefab != null && groundTilemap != null)
+            {
+                foreach (var cell in cells)
+                {
+                    Vector3 pos = groundTilemap.GetCellCenterWorld(cell);
+                    var fx = Instantiate(explosionFxPrefab, pos, Quaternion.identity, vfxParent);
+
+                    var fxScript = fx.GetComponent<ExplosionFX>();
+                    if (fxScript != null) fxScript.SetLifetime(activeSeconds);
+                    else Destroy(fx, activeSeconds);
+                }
+            }
+
             // +1 sayaç
             foreach (var c in cells)
             {
