@@ -27,11 +27,33 @@ namespace DPBomberman.Controllers
         private bool isMoving;
         private Vector3Int currentCell;
 
+        /// <summary>
+        /// Spawner tarafýndan sahnedeki tilemap referanslarý enjekte edilir.
+        /// (City/Desert/Forest fark etmeksizin NULL sorununu çözer.)
+        /// </summary>
+        public void InjectTilemaps(Tilemap ground, Tilemap solid, Tilemap breakable, Tilemap hard)
+        {
+            groundTilemap = ground;
+            solidTilemap = solid;
+            breakableTilemap = breakable;
+            hardTilemap = hard;
+        }
+
         private void Start()
         {
+            // Actor / tracker auto-wire (varsa)
+            if (actor == null)
+                actor = GetComponent<DamageableActor>();
+
+            if (explosionTracker == null)
+                explosionTracker = FindFirstObjectByType<ExplosionAreaTracker>();
+
+            // Eðer spawner inject etmediyse, sahneden isimle bulmayý dene (opsiyonel güvenlik aðý)
+            EnsureTilemapsBound();
+
             if (groundTilemap == null)
             {
-                Debug.LogError("[EnemyController] groundTilemap is NULL.");
+                Debug.LogError("[EnemyController] groundTilemap is NULL. (Spawner InjectTilemaps çaðýrmýyor olabilir)");
                 enabled = false;
                 return;
             }
@@ -42,20 +64,21 @@ namespace DPBomberman.Controllers
             // Spawn duvarýn üstündeyse yakýndaki boþ hücreye kaydýr
             TryRelocateIfBlocked();
 
-            if (actor == null)
-                actor = GetComponent<DamageableActor>();
-
             Debug.Log($"[EnemyController] Using groundTilemap: {groundTilemap.name}, startCell={currentCell}");
         }
 
         private void Update()
         {
+            if (!enabled) return;
+            if (groundTilemap == null) return;
+
             if (actor != null && actor.IsDead) return;
 
             // Patlama alanýnda mý?
             if (explosionTracker != null && explosionTracker.IsCellDangerous(currentCell))
             {
-                actor?.Kill();
+                // actor yoksa bile patlamada NRE yemesin
+                if (actor != null) actor.Kill();
                 return;
             }
 
@@ -83,6 +106,23 @@ namespace DPBomberman.Controllers
             StartCoroutine(MoveCellTo(target));
         }
 
+        private void EnsureTilemapsBound()
+        {
+            // Buradaki isimler sahnedeki GameObject isimleriyle ayný olmalý:
+            // Ground, Walls_Solid, Walls_Breakable, Walls_Hard
+            if (groundTilemap == null)
+                groundTilemap = GameObject.Find("Ground")?.GetComponent<Tilemap>();
+
+            if (solidTilemap == null)
+                solidTilemap = GameObject.Find("Walls_Solid")?.GetComponent<Tilemap>();
+
+            if (breakableTilemap == null)
+                breakableTilemap = GameObject.Find("Walls_Breakable")?.GetComponent<Tilemap>();
+
+            if (hardTilemap == null)
+                hardTilemap = GameObject.Find("Walls_Hard")?.GetComponent<Tilemap>();
+        }
+
         private Vector3Int PickRandomDirection()
         {
             int r = Random.Range(0, 4);
@@ -97,6 +137,8 @@ namespace DPBomberman.Controllers
 
         private bool IsBlocked(Vector3Int cell)
         {
+            if (groundTilemap == null) return true;
+
             if (solidTilemap != null && solidTilemap.HasTile(cell)) return true;
             if (breakableTilemap != null && breakableTilemap.HasTile(cell)) return true;
             if (hardTilemap != null && hardTilemap.HasTile(cell)) return true;
@@ -137,6 +179,8 @@ namespace DPBomberman.Controllers
 
         private IEnumerator MoveCellTo(Vector3Int targetCell)
         {
+            if (groundTilemap == null) yield break;
+
             isMoving = true;
 
             Vector3 startPos = transform.position;
@@ -158,6 +202,7 @@ namespace DPBomberman.Controllers
 
         private void SnapToCell(Vector3Int cell)
         {
+            if (groundTilemap == null) return;
             transform.position = groundTilemap.GetCellCenterWorld(cell);
         }
 
