@@ -4,20 +4,25 @@ using UnityEngine.Tilemaps;
 
 public class EnemySpawnerRandom : MonoBehaviour
 {
+    [Header("Prefab")]
     public GameObject enemyPrefab;
 
+    [Header("Tilemaps (Inspector preferred)")]
     public Tilemap ground;
     public Tilemap wallsSolid;
     public Tilemap wallsBreakable;
     public Tilemap wallsHard;
+    public Tilemap decorations; // ✅ GameObject.Find yerine referans (opsiyonel)
 
+    [Header("Spawn")]
     public int enemyCount = 2;
     public int maxAttemptsPerEnemy = 300;
 
+    [Header("Player")]
     public Transform player;
     public int minManhattanDistanceFromPlayer = 4;
 
-    IEnumerator Start()
+    private IEnumerator Start()
     {
         if (!enemyPrefab)
         {
@@ -25,18 +30,20 @@ public class EnemySpawnerRandom : MonoBehaviour
             yield break;
         }
 
-        // Eğer inspector'da tilemap set edilmediyse otomatik bul
-        if (!ground) ground = GameObject.Find("Ground")?.GetComponent<Tilemap>();
-        if (!wallsSolid) wallsSolid = GameObject.Find("Walls_Solid")?.GetComponent<Tilemap>();
-        if (!wallsBreakable) wallsBreakable = GameObject.Find("Walls_Breakable")?.GetComponent<Tilemap>();
-        if (!wallsHard) wallsHard = GameObject.Find("Walls_Hard")?.GetComponent<Tilemap>();
+        // Inspector set edilmediyse otomatik bul (1 kez)
+        if (!ground) ground = FindTilemapSafe("Ground");
+        if (!wallsSolid) wallsSolid = FindTilemapSafe("Walls_Solid");
+        if (!wallsBreakable) wallsBreakable = FindTilemapSafe("Walls_Breakable");
+        if (!wallsHard) wallsHard = FindTilemapSafe("Walls_Hard");
+        if (!decorations) decorations = FindTilemapSafe("Decorations"); // ✅ tek sefer bul
 
-        Debug.Log($"[EnemySpawnerRandom] ground={(ground ? ground.name : "NULL")} used={ground?.GetUsedTilesCount()}");
-        Debug.Log($"[EnemySpawnerRandom] deco used={GameObject.Find("Decorations")?.GetComponent<Tilemap>()?.GetUsedTilesCount()}");
+        // ✅ Loglar: asla exception fırlatmasın
+        Debug.Log($"[EnemySpawnerRandom] ground={(ground ? ground.name : "NULL")} used={SafeUsedTilesCount(ground)}");
+        Debug.Log($"[EnemySpawnerRandom] deco used={SafeUsedTilesCount(decorations)}");
 
         // Harita çizilene kadar bekle (max ~ 2sn)
         int safety = 120;
-        while (ground != null && ground.GetUsedTilesCount() == 0 && safety-- > 0)
+        while (ground != null && SafeUsedTilesCount(ground) == 0 && safety-- > 0)
             yield return null;
 
         if (ground == null)
@@ -45,10 +52,9 @@ public class EnemySpawnerRandom : MonoBehaviour
             yield break;
         }
 
-        int used = ground.GetUsedTilesCount();
+        int used = SafeUsedTilesCount(ground);
         Debug.Log($"[EnemySpawnerRandom] Ground ready. usedTiles={used}");
 
-        // Eğer hala 0 ise, kesin yanlış tilemap'e bakıyoruz veya map generator hiç çizmedi
         if (used == 0)
         {
             Debug.LogError("[EnemySpawnerRandom] Ground usedTiles STILL 0. MapGenerator ground'a çizmiyor veya yanlış tilemap seçili!");
@@ -65,21 +71,27 @@ public class EnemySpawnerRandom : MonoBehaviour
         Debug.Log($"[EnemySpawnerRandom] Spawn result: {spawned}/{enemyCount}");
     }
 
-    bool TrySpawnOne()
+    private bool TrySpawnOne()
     {
+        if (ground == null) return false;
+
         var b = ground.cellBounds;
 
         for (int attempt = 0; attempt < maxAttemptsPerEnemy; attempt++)
         {
             int x = Random.Range(b.xMin, b.xMax);
             int y = Random.Range(b.yMin, b.yMax);
-            Vector3Int cell = new(x, y, 0);
+            Vector3Int cell = new Vector3Int(x, y, 0);
 
+            // Tile kontrolü (ground yoksa zaten dönmüştük)
             if (!ground.HasTile(cell)) continue;
+
+            // Duvarlar (destroy olmuş olabilir => null check otomatik)
             if (wallsSolid && wallsSolid.HasTile(cell)) continue;
             if (wallsBreakable && wallsBreakable.HasTile(cell)) continue;
             if (wallsHard && wallsHard.HasTile(cell)) continue;
 
+            // Player'dan uzaklık
             if (player)
             {
                 var pCell = ground.WorldToCell(player.position);
@@ -93,5 +105,32 @@ public class EnemySpawnerRandom : MonoBehaviour
         }
 
         return false;
+    }
+
+    // -------------------------
+    // SAFE HELPERS (no errors)
+    // -------------------------
+
+    private static Tilemap FindTilemapSafe(string goName)
+    {
+        var go = GameObject.Find(goName);
+        return go ? go.GetComponent<Tilemap>() : null;
+    }
+
+    private static int SafeUsedTilesCount(Tilemap tm)
+    {
+        // Unity'de destroyed object bazen "null" gibi davranır.
+        if (tm == null) return 0;
+
+        try
+        {
+            // Senin extension/metodun (GetUsedTilesCount) burada çağrılır.
+            return tm.GetUsedTilesCount();
+        }
+        catch (MissingReferenceException)
+        {
+            // Destroy edilmiş referansa dokunulduysa -> error basma, 0 dön
+            return 0;
+        }
     }
 }

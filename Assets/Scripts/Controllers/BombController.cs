@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -14,6 +15,9 @@ namespace DPBomberman.Controllers
         public Tilemap groundTilemap;
         public TilemapDamageSystem damageSystem;
         public MapLogicAdapter mapLogicAdapter;
+        public System.Action OnExploded;
+        
+
 
         private Vector3Int originCell;
 

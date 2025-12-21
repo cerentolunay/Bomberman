@@ -1,73 +1,121 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Tilemaps;
-using DPBomberman.Controllers;
+using Patterns.Decorator;
+using System.Collections.Generic;
 
 namespace DPBomberman.Controllers
 {
     public class BombSystem : MonoBehaviour
     {
         [Header("Prefab")]
-        public GameObject bombPrefab;
+        [SerializeField] private GameObject bombPrefab;
 
         [Header("Refs")]
-        public PlayerController player;
-        public Tilemap groundTilemap;
-        public TilemapDamageSystem damageSystem;
-        public MapLogicAdapter mapLogicAdapter;
+        [SerializeField] private PlayerController player;
+        [SerializeField] private Tilemap groundTilemap;
+        [SerializeField] private TilemapDamageSystem damageSystem;
+        [SerializeField] private MapLogicAdapter mapLogicAdapter;
 
         [Header("Settings")]
-        public float fuseSeconds = 2.0f;
-        public int range = 2;
+        [SerializeField] private float fuseSeconds = 2.0f;
+        [SerializeField] private int defaultRange = 1;
 
-        private void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                PlaceBomb();
-            }
-        }
+        private PlayerStatsHolder stats;
+        private readonly List<BombController> myBombs = new List<BombController>();
 
-        private void PlaceBomb()
+        private void Awake() => AutoWire();
+
+        private void AutoWire()
         {
-            if (bombPrefab == null)
-            {
-                Debug.LogError("[BombSystem] bombPrefab is NULL.");
-                return;
-            }
-            if (player == null)
-            {
-                Debug.LogError("[BombSystem] player is NULL.");
-                return;
-            }
+            if (player == null) player = Object.FindFirstObjectByType<PlayerController>();
+            if (damageSystem == null) damageSystem = Object.FindFirstObjectByType<TilemapDamageSystem>();
+            if (mapLogicAdapter == null) mapLogicAdapter = Object.FindFirstObjectByType<MapLogicAdapter>();
+
             if (groundTilemap == null)
             {
-                Debug.LogError("[BombSystem] groundTilemap is NULL.");
-                return;
+                var groundGO = GameObject.Find("Ground");
+                if (groundGO != null) groundTilemap = groundGO.GetComponent<Tilemap>();
             }
-            if (damageSystem == null)
+
+            // ✅ Stats sadece PLAYER üstünden alınmalı (başka holder'a kaymasın)
+            if (player != null) stats = player.GetComponent<PlayerStatsHolder>();
+        }
+
+        public bool TryPlaceBomb()
+        {
+
+            if (bombPrefab == null) return false;
+
+            if (player == null || groundTilemap == null || damageSystem == null)
+                AutoWire();
+
+            if (player == null || groundTilemap == null || damageSystem == null)
+                return false;
+
+            // stats güncel tut
+            if (stats == null) stats = player.GetComponent<PlayerStatsHolder>();
+
+            // patlamış bombaları temizle
+            myBombs.RemoveAll(b => b == null);
+
+            // ✅ Varsayılanlar: başlangıçta 1 bomba, default menzil
+            int maxBombs = 1;
+            int dynamicRange = Mathf.Max(1, defaultRange);
+
+            // ✅ PowerUp alındıysa burada artar
+            if (stats != null)
             {
-                Debug.LogError("[BombSystem] damageSystem is NULL.");
-                return;
+                maxBombs = Mathf.Max(1, stats.BombCount);
+                dynamicRange = Mathf.Max(1, stats.BombPower);
             }
+
+            Debug.Log($"[BombSystem] myBombs={myBombs.Count}, maxBombs={maxBombs}, range={dynamicRange}");
+
+            // ✅ aynı anda maxBombs kadar bomba
+            if (myBombs.Count >= maxBombs) return false;
 
             Vector3Int cell = player.GetCurrentCell();
 
-            GameObject bombObj = Instantiate(bombPrefab);
+            // aynı hücreye ikinci bomba koyma
+            for (int i = 0; i < myBombs.Count; i++)
+            {
+                if (myBombs[i] == null) continue;
+
+                Vector3Int bombCell = groundTilemap.WorldToCell(myBombs[i].transform.position);
+                if (bombCell == cell) return false;
+            }
+
+            // powerup üstüne bomba koyma
+            if (PowerUpRegistry.Has(cell)) return false;
+
+            // spawn
+            var bombObj = Instantiate(bombPrefab);
             var bomb = bombObj.GetComponent<BombController>();
             if (bomb == null)
             {
-                Debug.LogError("[BombSystem] bombPrefab must have BombController component.");
                 Destroy(bombObj);
-                return;
+                return false;
             }
 
             bomb.fuseSeconds = fuseSeconds;
-            bomb.range = range;
+            bomb.range = dynamicRange;
             bomb.groundTilemap = groundTilemap;
             bomb.damageSystem = damageSystem;
             bomb.mapLogicAdapter = mapLogicAdapter;
 
+            myBombs.Add(bomb);
             bomb.Arm(cell);
+
+            // fallback: fuse bitince listeden düş
+            StartCoroutine(RemoveAfterFuse(bomb, fuseSeconds + 0.25f));
+
+            return true;
+        }
+
+        private System.Collections.IEnumerator RemoveAfterFuse(BombController bomb, float seconds)
+        {
+            yield return new WaitForSeconds(seconds);
+            myBombs.Remove(bomb);
         }
     }
 }

@@ -48,6 +48,9 @@ TagManager:
   - name: Walls
     uniqueID: 3809670373
     locked: 0
+  - name: PowerUps
+    uniqueID: 2857348563
+    locked: 0
   - name: Characters
     uniqueID: 1540242517
     locked: 0

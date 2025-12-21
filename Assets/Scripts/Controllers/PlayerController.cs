@@ -1,28 +1,44 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.Tilemaps;
+using Patterns.Decorator;
 
 namespace DPBomberman.Controllers
 {
     public class PlayerController : MonoBehaviour
     {
         [Header("Grid Movement")]
-        public Tilemap groundTilemap;          // World<->Cell dönüþümü için
-        public Tilemap solidTilemap;           // Unbreakable duvarlar
+        public Tilemap groundTilemap;
+        public Tilemap solidTilemap;
         public Tilemap breakableTilemap;
-        public Tilemap hardTilemap;// Hard duvar katmaný// Breakable duvarlar (istersen bloklamasýn)
+        public Tilemap hardTilemap;
+
+        [Header("Bomb")]
+        [SerializeField] private BombSystem bombSystem;
 
         [Header("Death")]
         public ExplosionAreaTracker explosionTracker;
         public DamageableActor actor;
 
-        [Tooltip("Bir hücreden diðerine geçiþ süresi (sn). 0.08-0.15 arasý iyi.)")]
+        [Tooltip("Bir hÃ¼creden diÄŸerine geÃ§iÅŸ sÃ¼resi (sn). 0.08-0.15 arasÄ± iyi.)")]
         public float stepDuration = 0.12f;
 
         private bool isMoving;
         private Vector3Int currentCell;
 
+        private PlayerStatsHolder stats;
+        private float baseStepDuration;
+
+        private void Awake()
+        {
+            stats = GetComponent<PlayerStatsHolder>();
+            if (bombSystem == null) bombSystem = Object.FindFirstObjectByType<BombSystem>();
+            if (actor == null) actor = GetComponent<DamageableActor>();
+        }
+
         private void Start()
         {
+            baseStepDuration = stepDuration;
+
             if (groundTilemap == null)
             {
                 Debug.LogError("[PlayerController] groundTilemap is NULL. Assign in Inspector.");
@@ -30,44 +46,40 @@ namespace DPBomberman.Controllers
                 return;
             }
 
-            // Baþlangýç hücresi
             currentCell = groundTilemap.WorldToCell(transform.position);
             SnapToCell(currentCell);
-
-            if (actor == null)
-                actor = GetComponent<DamageableActor>();
-
         }
 
         private void Update()
         {
-            // 1) Öldüyse hiç iþlem yapma
             if (actor != null && actor.IsDead) return;
 
-            // 2) Patlama hücresindeyse öl
+            // Ã¶lÃ¼m kontrolÃ¼
             if (explosionTracker != null && explosionTracker.IsCellDangerous(currentCell))
             {
                 actor?.Kill();
                 return;
             }
 
-            // 3) Normal hareket kontrolü
+            // bomba: sadece buradan
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                bombSystem?.TryPlaceBomb();
+            }
+
             if (isMoving) return;
 
             Vector3Int dir = ReadDirection();
             if (dir == Vector3Int.zero) return;
 
             Vector3Int targetCell = currentCell + dir;
-
-            if (IsBlocked(targetCell))
-                return;
+            if (IsBlocked(targetCell)) return;
 
             StartCoroutine(MoveCellTo(targetCell));
         }
 
         private Vector3Int ReadDirection()
         {
-            // Öncelik: yatay, sonra dikey (ayný anda basýlýrsa)
             if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
                 return new Vector3Int(-1, 0, 0);
 
@@ -85,21 +97,10 @@ namespace DPBomberman.Controllers
 
         private bool IsBlocked(Vector3Int cell)
         {
-            // Solid duvar varsa blokla
-            if (solidTilemap != null && solidTilemap.HasTile(cell))
-                return true;
-
-            if (hardTilemap != null && hardTilemap.HasTile(cell))
-                return true;
-            
-            // Breakable duvar varsa blokla (klasik bomberman gibi)
-            if (breakableTilemap != null && breakableTilemap.HasTile(cell))
-                return true;
-
-            // Ground tile yoksa (harita dýþý) blokla
-            if (!groundTilemap.HasTile(cell))
-                return true;
-
+            if (solidTilemap != null && solidTilemap.HasTile(cell)) return true;
+            if (hardTilemap != null && hardTilemap.HasTile(cell)) return true;
+            if (breakableTilemap != null && breakableTilemap.HasTile(cell)) return true;
+            if (!groundTilemap.HasTile(cell)) return true;
             return false;
         }
 
@@ -110,10 +111,13 @@ namespace DPBomberman.Controllers
             Vector3 startPos = transform.position;
             Vector3 targetPos = groundTilemap.GetCellCenterWorld(targetCell);
 
+            float speedValue = (stats != null) ? Mathf.Max(0.1f, stats.Speed) : 1f;
+            float effectiveStepDuration = baseStepDuration / speedValue;
+
             float t = 0f;
             while (t < 1f)
             {
-                t += Time.deltaTime / Mathf.Max(0.001f, stepDuration);
+                t += Time.deltaTime / Mathf.Max(0.001f, effectiveStepDuration);
                 transform.position = Vector3.Lerp(startPos, targetPos, t);
                 yield return null;
             }
@@ -129,7 +133,6 @@ namespace DPBomberman.Controllers
             transform.position = groundTilemap.GetCellCenterWorld(cell);
         }
 
-        // Faz 1–2 için yardýmcý: baþka sistemler player cell'ini almak isterse
         public Vector3Int GetCurrentCell() => currentCell;
     }
 }
