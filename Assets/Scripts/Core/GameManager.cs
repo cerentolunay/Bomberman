@@ -13,6 +13,9 @@ public class GameManager : MonoBehaviour
     [Header("Scene References (auto-bind)")]
     public MapGenerator mapGenerator;
     public MapLogicAdapter mapLogicAdapter;
+    
+    [Header("Input")]
+    public DPBomberman.InputSystem.InputHandler inputHandler;
 
     [Header("Theme")]
     public ThemeType selectedTheme = ThemeType.Forest;
@@ -38,16 +41,22 @@ public class GameManager : MonoBehaviour
         // --- State Machine ---
         stateMachine = new GameStateMachine();
 
-        // Sahne event
+        // Sahne event aboneliÄŸi
         SceneManager.sceneLoaded -= OnSceneLoaded;
         SceneManager.sceneLoaded += OnSceneLoaded;
 
         ResolveThemeFactory();
     }
 
+    public void SetGameplayInput(bool enabled)
+    {
+        if (inputHandler != null)
+            inputHandler.SetInputEnabled(enabled);
+    }
+
     private void Start()
     {
-        // Ýlk sahne için init (yalnýzca bir kez)
+        // Ä°lk sahne iÃ§in manuel tetikleme (yalnÄ±zca bir kez)
         if (bootstrapped) return;
         bootstrapped = true;
 
@@ -56,6 +65,8 @@ public class GameManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        // DÃœZELTME: Buradaki gereksiz State deÄŸiÅŸtirme kodlarÄ± silindi.
+        // OnDestroy sadece temizlik yapar.
         if (Instance == this)
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -69,7 +80,7 @@ public class GameManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // SceneLoaded geldiðinde de tekilleþtirelim
+        // SceneLoaded geldiÄŸinde bayraÄŸÄ± kaldÄ±ralÄ±m
         bootstrapped = true;
 
         Time.timeScale = 1f;
@@ -86,7 +97,6 @@ public class GameManager : MonoBehaviour
 
         uiManager?.HideGameOver();
         uiManager?.HidePause();
-
     }
 
     private void BindSceneReferences()
@@ -94,6 +104,10 @@ public class GameManager : MonoBehaviour
         mapGenerator = FindFirstObjectByType<MapGenerator>();
         mapLogicAdapter = FindFirstObjectByType<MapLogicAdapter>();
         uiManager = FindFirstObjectByType<UIManager>(FindObjectsInactive.Include);
+        
+        // Merge sonrasÄ± baÄŸlantÄ± koparsa diye InputHandler'Ä± da bulalÄ±m
+        if(inputHandler == null)
+            inputHandler = FindFirstObjectByType<DPBomberman.InputSystem.InputHandler>();
 
         var sceneName = SceneManager.GetActiveScene().name.ToLowerInvariant();
 
@@ -105,14 +119,13 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[GameManager] Bind refs => mapGen={(mapGenerator ? mapGenerator.name : "NULL")}, mapLogic={(mapLogicAdapter ? mapLogicAdapter.name : "NULL")}");
     }
 
-
     public void ResolveThemeFactory()
     {
         CurrentTileFactory = null;
 
         if (availableThemeFactories == null || availableThemeFactories.Length == 0)
         {
-            Debug.LogError("[GameManager] availableThemeFactories boþ. Inspector'da doldur.");
+            Debug.LogError("[GameManager] availableThemeFactories boÅŸ. Inspector'da doldur.");
             return;
         }
 
@@ -177,13 +190,7 @@ public class GameManager : MonoBehaviour
     public void ResumeFromPause()
     {
         Debug.Log("[GameManager] ResumeFromPause CALLED");
-
         Time.timeScale = 1f;
         uiManager?.HidePause();
-
-        // Eðer pause state’ten çýkýp tekrar playing’e dönmek istiyorsan:
-        // NOT: PlayingState.Enter map’i tekrar generate ediyorsa, aþaðýdaki satýr restart etkisi yapabilir.
-        // O yüzden þimdilik sadece UI kapat + timeScale düzelt.
     }
-
 }

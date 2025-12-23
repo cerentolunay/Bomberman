@@ -18,7 +18,7 @@ namespace DPBomberman.Patterns.State
         {
             Debug.Log("[STATE] Enter MainMenu");
 
-            // Güvenlik: Pause/GameOver'dan geldiysek oyun akmasın diye bırakılan şeyleri temizle
+            // GÃ¼venlik: Pause/GameOver'dan geldiysek oyun akmasÄ±n diye bÄ±rakÄ±lan ÅŸeyleri temizle
             Time.timeScale = 1f;
 
             var ui = Object.FindFirstObjectByType<UIManager>();
@@ -28,16 +28,21 @@ namespace DPBomberman.Patterns.State
                 ui.HideGameOver();
             }
 
-            // Eğer zaten MainMenu sahnesinde değilsek, sahneyi yükle
+            // EÄŸer zaten MainMenu sahnesinde deÄŸilsek, sahneyi yÃ¼kle
             var sceneName = SceneManager.GetActiveScene().name.ToLowerInvariant();
             if (!sceneName.Contains("mainmenu"))
             {
                 game.GoToMainMenu();
-                return;
+                return; // Sahne yÃ¼klenince bu state yeniden oluÅŸturulacak, o yÃ¼zden burayÄ± kesiyoruz.
             }
 
             // Buraya geliyorsa zaten MainMenu sahnesindesin.
-            // İstersen burada MainMenu UI enable/disable işleri yapılır.
+            // Ä°stersen burada MainMenu UI enable/disable iÅŸleri yapÄ±lÄ±r.
+            
+            game.SetGameplayInput(false);
+            
+            // Not: Time.timeScale yukarÄ±da yapÄ±ldÄ±ÄŸÄ± iÃ§in tekrar yazmaya gerek yok.
+            // TODO (Faz 2+): UI aÃ§, menÃ¼ inputlarÄ±nÄ± aktif et
         }
 
         public void Exit()
@@ -47,11 +52,11 @@ namespace DPBomberman.Patterns.State
 
         public void Tick(float deltaTime)
         {
-            // Test amaçlı P ile oyuna geçmek istiyorsan:
+            // Test amaÃ§lÄ± P ile oyuna geÃ§mek istiyorsan:
             if (Input.GetKeyDown(KeyCode.P))
             {
-                // Direkt state değiştirmek yerine sahne yüklet:
-                // (OnSceneLoaded zaten PlayingState'e geçiriyor)
+                // Direkt state deÄŸiÅŸtirmek yerine sahne yÃ¼klet:
+                // (GameManager.OnSceneLoaded zaten PlayingState'e geÃ§iriyor)
                 game.StartGame(game.selectedTheme);
             }
         }

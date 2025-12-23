@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-namespace DPBomberman.Controllers
+namespace DPBomberman.Patterns.Strategy
 {
     public class EnemyController : MonoBehaviour
     {
@@ -12,25 +12,27 @@ namespace DPBomberman.Controllers
         public Tilemap breakableTilemap;
         public Tilemap hardTilemap;
 
-        [Tooltip("Bir hücreden diðerine geçiþ süresi")]
+        [Tooltip("Bir hÃ¼creden diÄŸerine geÃ§iÅŸ sÃ¼resi")]
         public float stepDuration = 0.14f;
 
-        [Header("AI")]
-        [Tooltip("Her adým arasýnda bekleme (çok hýzlý karar deðiþtirmesin)")]
+        [Header("AI Timing")]
         public float moveInterval = 0.10f;
         private float nextMoveTime = 0f;
 
+        [Header("AI Strategy")]
+        public EnemyStrategyType strategyType = EnemyStrategyType.Random;
+
+        public Transform player;
+        private IEnemyMovementStrategy strategy;
+
         [Header("Death")]
-        public ExplosionAreaTracker explosionTracker;
-        public DamageableActor actor;
+        // Bu sÄ±nÄ±flar Controller namespace'inde olduÄŸu iÃ§in tam yol belirttik, doÄŸru.
+        public DPBomberman.Controllers.ExplosionAreaTracker explosionTracker;
+        public DPBomberman.Controllers.DamageableActor actor;
 
         private bool isMoving;
         private Vector3Int currentCell;
 
-        /// <summary>
-        /// Spawner tarafýndan sahnedeki tilemap referanslarý enjekte edilir.
-        /// (City/Desert/Forest fark etmeksizin NULL sorununu çözer.)
-        /// </summary>
         public void InjectTilemaps(Tilemap ground, Tilemap solid, Tilemap breakable, Tilemap hard)
         {
             groundTilemap = ground;
@@ -39,43 +41,54 @@ namespace DPBomberman.Controllers
             hardTilemap = hard;
         }
 
+        public void SetStrategy(EnemyStrategyType type)
+        {
+            strategyType = type;
+            strategy = CreateStrategy(strategyType);
+        }
+
         private void Start()
         {
-            // Actor / tracker auto-wire (varsa)
-            if (actor == null)
-                actor = GetComponent<DamageableActor>();
+            // Componentleri otomatik bul
+            if (actor == null) actor = GetComponent<DPBomberman.Controllers.DamageableActor>();
+            if (explosionTracker == null) explosionTracker = FindFirstObjectByType<DPBomberman.Controllers.ExplosionAreaTracker>();
 
-            if (explosionTracker == null)
-                explosionTracker = FindFirstObjectByType<ExplosionAreaTracker>();
+            if (player == null)
+            {
+                var p = GameObject.FindGameObjectWithTag("Player");
+                if (p != null) player = p.transform;
+            }
 
-            // Eðer spawner inject etmediyse, sahneden isimle bulmayý dene (opsiyonel güvenlik aðý)
             EnsureTilemapsBound();
-
             if (groundTilemap == null)
             {
-                Debug.LogError("[EnemyController] groundTilemap is NULL. (Spawner InjectTilemaps çaðýrmýyor olabilir)");
+                Debug.LogError("[EnemyController] Ground Tilemap yok, AI kapatÄ±lÄ±yor.");
                 enabled = false;
                 return;
             }
 
-            // Baþlangýç hücresi
+            // Stratejiyi oluÅŸtur
+            strategy = CreateStrategy(strategyType);
+
+            // BaÅŸlangÄ±Ã§ hÃ¼cresini hesapla
             currentCell = groundTilemap.WorldToCell(transform.position);
 
-            // (0,0) gibi kenara düþtüyse haritanýn iç bounds'una çek (kenar duvar riskini azaltýr)
+            // (0,0) gibi dÄ±ÅŸ kenara dÃ¼ÅŸtÃ¼yse haritanÄ±n iÃ§ sÄ±nÄ±rlarÄ±na Ã§ek (duvar riskini azaltÄ±r)
             currentCell = ClampToInnerBounds(currentCell);
 
-            // Spawn zone’a denk geldiyse (player spawn civarý), rastgele güvenli hücreye kaç
+            // Spawn zone'a denk geldiyse (oyuncu baÅŸlangÄ±Ã§ noktasÄ±), rastgele gÃ¼venli hÃ¼creye kaÃ§
             if (IsCornerSpawnZone(currentCell))
             {
                 currentCell = FindRandomFreeCell();
             }
 
+            // HÃ¼creye tam oturt
             SnapToCell(currentCell);
 
-            // Spawn duvarýn üstündeyse yakýndaki boþ hücreye kaydýr
+            // EÄŸer doÄŸduÄŸumuz yer duvarÄ±n Ã¼stÃ¼yse yakÄ±ndaki boÅŸ hÃ¼creye kaydÄ±r
             if (!TryRelocateIfBlocked())
             {
-                // Komþu yoksa da rastgele güvenli hücreye kaç
+                // KomÅŸu da yoksa mecburen rastgele gÃ¼venli bir yere Ä±ÅŸÄ±nla
                 currentCell = FindRandomFreeCell();
                 SnapToCell(currentCell);
             }
@@ -83,58 +96,76 @@ namespace DPBomberman.Controllers
 
         private void Update()
         {
-            if (!enabled) return;
-            if (groundTilemap == null) return;
-
+            if (!enabled || groundTilemap == null) return;
             if (actor != null && actor.IsDead) return;
 
-            // Patlama alanýnda mý?
+            // Patlama kontrolÃ¼: BastÄ±ÄŸÄ±m kare tehlikeli mi?
             if (explosionTracker != null && explosionTracker.IsCellDangerous(currentCell))
             {
-                // actor yoksa bile patlamada NRE yemesin
                 if (actor != null) actor.Kill();
                 return;
             }
 
+            // Hareket halindeysek veya zaman gelmediyse bekle
             if (isMoving) return;
-
-            // Çok sýk yön deðiþtirmesin
             if (Time.time < nextMoveTime) return;
             nextMoveTime = Time.time + moveInterval;
 
-            Vector3Int dir = PickRandomDirection();
+            // Stratejiden yÃ¶n iste
+            Vector3Int dir = PickDirectionFromStrategy();
             Vector3Int target = currentCell + dir;
 
-            // blokluysa birkaç deneme yap
+            // EÄŸer hedef duvar ise, stratejiden yeni yÃ¶n iste (En fazla 8 deneme)
             int attempts = 0;
             while (IsBlocked(target) && attempts < 8)
             {
-                dir = PickRandomDirection();
+                dir = PickDirectionFromStrategy(); // Tekrar rastgele/stratejik yÃ¶n seÃ§
                 target = currentCell + dir;
                 attempts++;
             }
 
-            if (IsBlocked(target))
-                return;
+            // Hala blokluysa bu tur bekle
+            if (IsBlocked(target)) return;
 
             StartCoroutine(MoveCellTo(target));
         }
 
+        private Vector3Int PickDirectionFromStrategy()
+        {
+            // EÄŸer oyuncu Ã¶ldÃ¼yse veya strateji yoksa rastgele gez
+            if (strategy == null || player == null) return PickRandomDirection();
+
+            var ctx = new EnemyContext(
+                transform.position,
+                player.position,
+                transform.up,
+                Time.deltaTime
+            );
+
+            Vector2Int move = strategy.GetNextMove(ctx);
+            
+            // Strateji (0,0) dÃ¶nerse hareket etmiyor demektir, rastgele bir yere gitmeye zorla
+            if (move == Vector2Int.zero) return PickRandomDirection();
+
+            return new Vector3Int(move.x, move.y, 0);
+        }
+
+        private IEnemyMovementStrategy CreateStrategy(EnemyStrategyType type)
+        {
+            return type switch
+            {
+                EnemyStrategyType.Random => new RandomMoveStrategy(),
+                EnemyStrategyType.ChasePlayer => new ChasePlayerStrategy(),
+                _ => new RandomMoveStrategy()
+            };
+        }
+
         private void EnsureTilemapsBound()
         {
-            // Buradaki isimler sahnedeki GameObject isimleriyle ayný olmalý:
-            // Ground, Walls_Solid, Walls_Breakable, Walls_Hard
-            if (groundTilemap == null)
-                groundTilemap = GameObject.Find("Ground")?.GetComponent<Tilemap>();
-
-            if (solidTilemap == null)
-                solidTilemap = GameObject.Find("Walls_Solid")?.GetComponent<Tilemap>();
-
-            if (breakableTilemap == null)
-                breakableTilemap = GameObject.Find("Walls_Breakable")?.GetComponent<Tilemap>();
-
-            if (hardTilemap == null)
-                hardTilemap = GameObject.Find("Walls_Hard")?.GetComponent<Tilemap>();
+            if (groundTilemap == null) groundTilemap = GameObject.Find("Ground")?.GetComponent<Tilemap>();
+            if (solidTilemap == null) solidTilemap = GameObject.Find("Walls_Solid")?.GetComponent<Tilemap>();
+            if (breakableTilemap == null) breakableTilemap = GameObject.Find("Walls_Breakable")?.GetComponent<Tilemap>();
+            if (hardTilemap == null) hardTilemap = GameObject.Find("Walls_Hard")?.GetComponent<Tilemap>();
         }
 
         private Vector3Int PickRandomDirection()
@@ -152,27 +183,25 @@ namespace DPBomberman.Controllers
         private bool IsBlocked(Vector3Int cell)
         {
             if (groundTilemap == null) return true;
+            // Zemin yoksa boÅŸluktur, yÃ¼rÃ¼nemez
+            if (!groundTilemap.HasTile(cell)) return true;
 
+            // Duvarlar varsa blokludur
             if (solidTilemap != null && solidTilemap.HasTile(cell)) return true;
             if (breakableTilemap != null && breakableTilemap.HasTile(cell)) return true;
             if (hardTilemap != null && hardTilemap.HasTile(cell)) return true;
-
-            // ground yoksa harita dýþý
-            if (!groundTilemap.HasTile(cell)) return true;
-
+            
             return false;
         }
 
-        /// <summary>
-        /// Enemy'nin baþlangýç hücresini tilemap bounds içinde ve kenarlardan uzak tutar.
-        /// </summary>
+        // Enemy'nin baÅŸlangÄ±Ã§ hÃ¼cresini tilemap sÄ±nÄ±rlarÄ± iÃ§inde tutar
         private Vector3Int ClampToInnerBounds(Vector3Int cell)
         {
             if (groundTilemap == null) return cell;
 
             BoundsInt b = groundTilemap.cellBounds;
 
-            // Kenarlarý dýþarýda býrak: +1 / -2
+            // KenarlarÄ± dÄ±ÅŸarÄ±da bÄ±rak: +1 / -2 (Duvar payÄ±)
             int minX = b.xMin + 1;
             int maxX = b.xMax - 2;
             int minY = b.yMin + 1;
@@ -189,29 +218,23 @@ namespace DPBomberman.Controllers
             if (groundTilemap == null) return false;
 
             BoundsInt b = groundTilemap.cellBounds;
+            int xMin = b.xMin; int yMin = b.yMin;
+            int xMax = b.xMax - 1; int yMax = b.yMax - 1;
 
-            int xMin = b.xMin;
-            int yMin = b.yMin;
-            int xMax = b.xMax - 1;
-            int yMax = b.yMax - 1;
-
-            // Spawn zone hücreleri (MapGenerator ile ayný mantýk): köþe + 2 komþu
-            bool bottomLeft = (cell.x == xMin + 1 && cell.y == yMin + 1) || (cell.x == xMin + 1 && cell.y == yMin + 2) || (cell.x == xMin + 2 && cell.y == yMin + 1);
-            bool bottomRight = (cell.x == xMax - 1 && cell.y == yMin + 1) || (cell.x == xMax - 1 && cell.y == yMin + 2) || (cell.x == xMax - 2 && cell.y == yMin + 1);
-            bool topLeft = (cell.x == xMin + 1 && cell.y == yMax - 1) || (cell.x == xMin + 1 && cell.y == yMax - 2) || (cell.x == xMin + 2 && cell.y == yMax - 1);
-            bool topRight = (cell.x == xMax - 1 && cell.y == yMax - 1) || (cell.x == xMax - 1 && cell.y == yMax - 2) || (cell.x == xMax - 2 && cell.y == yMax - 1);
+            // 4 KÃ¶ÅŸe ve komÅŸularÄ± (Spawn Zone)
+            bool bottomLeft = (cell.x <= xMin + 2 && cell.y <= yMin + 2);
+            bool bottomRight = (cell.x >= xMax - 2 && cell.y <= yMin + 2);
+            bool topLeft = (cell.x <= xMin + 2 && cell.y >= yMax - 2);
+            bool topRight = (cell.x >= xMax - 2 && cell.y >= yMax - 2);
 
             return bottomLeft || bottomRight || topLeft || topRight;
         }
 
-        private Vector3Int FindRandomFreeCell(int attempts = 200)
+        private Vector3Int FindRandomFreeCell(int attempts = 100)
         {
             BoundsInt b = groundTilemap.cellBounds;
-
-            int minX = b.xMin + 1;
-            int maxX = b.xMax - 2;
-            int minY = b.yMin + 1;
-            int maxY = b.yMax - 2;
+            int minX = b.xMin + 1; int maxX = b.xMax - 2;
+            int minY = b.yMin + 1; int maxY = b.yMax - 2;
 
             for (int i = 0; i < attempts; i++)
             {
@@ -224,49 +247,35 @@ namespace DPBomberman.Controllers
 
                 return cell;
             }
-
-            // Bulamazsa mevcut cell'i döndür (en azýndan crash olmaz)
-            return currentCell;
+            return currentCell; // Bulamazsa olduÄŸu yerde kalsÄ±n
         }
-
 
         private bool TryRelocateIfBlocked()
         {
-            if (!IsBlocked(currentCell))
-                return true;
+            if (!IsBlocked(currentCell)) return true;
 
-            Vector3Int[] neighbors =
-            {
-                currentCell + Vector3Int.right,
-                currentCell + Vector3Int.left,
-                currentCell + Vector3Int.up,
-                currentCell + Vector3Int.down
-            };
-
+            // 4 yÃ¶ne bak, boÅŸ yer varsa oraya kay
+            Vector3Int[] neighbors = { currentCell + Vector3Int.right, currentCell + Vector3Int.left, currentCell + Vector3Int.up, currentCell + Vector3Int.down };
             foreach (var n in neighbors)
             {
                 if (!IsBlocked(n))
                 {
                     currentCell = n;
                     SnapToCell(currentCell);
-                    Debug.Log($"[EnemyController] Spawn was blocked, relocated to {currentCell}");
                     return true;
                 }
             }
-
-            Debug.LogWarning($"[EnemyController] Spawn is blocked and no free neighbor found at {currentCell}");
             return false;
         }
 
         private IEnumerator MoveCellTo(Vector3Int targetCell)
         {
             if (groundTilemap == null) yield break;
-
             isMoving = true;
-
+            
             Vector3 startPos = transform.position;
             Vector3 targetPos = groundTilemap.GetCellCenterWorld(targetCell);
-
+            
             float t = 0f;
             while (t < 1f)
             {
@@ -274,10 +283,9 @@ namespace DPBomberman.Controllers
                 transform.position = Vector3.Lerp(startPos, targetPos, t);
                 yield return null;
             }
-
+            
             currentCell = targetCell;
             SnapToCell(currentCell);
-
             isMoving = false;
         }
 
