@@ -1,5 +1,6 @@
 using UnityEngine;
 using DPBomberman.Controllers;
+using DPBomberman.Patterns.Strategy;
 
 public class PlayerCollisionKill : MonoBehaviour
 {
