@@ -1,56 +1,103 @@
 using UnityEngine;
+using DPBomberman.Controllers;
 
 public class PlayerCollisionKill : MonoBehaviour
 {
+    [Header("Safety")]
+    [SerializeField] private float graceSeconds = 0.30f;
+
+    [Header("Debug")]
+    [SerializeField] private bool verboseLogs = false;
+
     private bool dead;
+    private float bornTime;
+
+    private void OnEnable()
+    {
+        // Restart/respawn gibi durumlarda tekrar düzgün baþlasýn
+        dead = false;
+        bornTime = Time.time;
+    }
+
+    private bool InGrace()
+    {
+        return (Time.time - bornTime) < graceSeconds;
+    }
+
+    private bool IsRealEnemy(Component c)
+    {
+        if (c == null) return false;
+        if (!c.CompareTag("Enemy")) return false;
+
+        // Collider child'ta olabilir; EnemyController parent/root'ta aranýr.
+        return c.GetComponentInParent<EnemyController>() != null;
+    }
+
+    private void Log(string msg)
+    {
+        if (!verboseLogs) return;
+        Debug.Log(msg);
+    }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (dead) return;
+        if (dead || InGrace()) return;
 
-        if (collision.collider.CompareTag("Enemy"))
-            Die();
+        Log($"[PlayerCollisionKill] COLLISION with {collision.collider.name} tag={collision.collider.tag} " +
+            $"root={collision.collider.transform.root.name} pos={collision.collider.transform.root.position}");
+
+        if (IsRealEnemy(collision.collider))
+            Die("Collision");
     }
 
-    // Enemy Trigger ise bunu kullan (Collision çalýþmazsa)
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (dead) return;
+        if (dead || InGrace()) return;
 
-        if (other.CompareTag("Enemy"))
-            Die();
+        Log($"[PlayerCollisionKill] TRIGGER with {other.name} tag={other.tag} " +
+            $"root={other.transform.root.name} pos={other.transform.root.position}");
+
+        if (IsRealEnemy(other))
+            Die("Trigger");
     }
 
-    public  void Die()
+    public void Die()
     {
+        Die("Unknown");
+    }
+
+    public void Die(string reason)
+    {
+        if (dead) return;
         dead = true;
 
-        // 1) görünmesin
+        Debug.Log($"[Player] DEAD (by {reason})");
+
+        // Görsel kapat
         var sr = GetComponentInChildren<SpriteRenderer>();
         if (sr) sr.enabled = false;
 
-        // 2) hareket etmesin
+        // Hareket durdur
         var rb = GetComponent<Rigidbody2D>();
         if (rb) rb.linearVelocity = Vector2.zero;
 
-        // 3) scriptleri kapat (PlayerMovement vs)
+        // Diðer scriptleri kapat
         foreach (var mb in GetComponents<MonoBehaviour>())
-        {
             if (mb != this) mb.enabled = false;
-        }
 
-        // 4) collider kapat ki tekrar tetiklenmesin
+        // Collider kapat
         var col = GetComponent<Collider2D>();
         if (col) col.enabled = false;
 
         Debug.Log("[Player] DEAD");
-        var ui = FindFirstObjectByType<UIManager>();
-        if (!ui)
+
+        var gm = FindFirstObjectByType<GameManager>();
+        if (!gm)
         {
-            Debug.LogError("[Player] UIManager not found in scene!");
+            Debug.LogError("[Player] GameManager not found in scene!");
             return;
         }
 
-        ui.ShowGameOver();
+        gm.GoToGameOver();
     }
 }

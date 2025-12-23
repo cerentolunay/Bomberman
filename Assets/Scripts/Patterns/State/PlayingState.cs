@@ -20,17 +20,17 @@ namespace DPBomberman.Patterns.State
             
             if (game.mapGenerator == null)
             {
-                Debug.LogError("[PlayingState] mapGenerator is NULL. Assign it in GameManager Inspector.");
+                Debug.LogError("[PlayingState] mapGenerator is NULL. Scene' de MapGenerator yok veya aktif deðil.");
                 return;
             }
 
             if (game.mapLogicAdapter == null)
             {
-                Debug.LogError("[PlayingState] mapLogicAdapter is NULL. Assign it in GameManager Inspector.");
+                Debug.LogError("[PlayingState] mapLogicAdapter is NULL. Scene' de MapLogicAdapter yok veya aktif deðil.");
                 return;
             }
-
-            game.mapGenerator.GenerateMap();
+            // Factory'yi GameManager'dan alýp MapGenerator'a parametre olarak veriyoruz
+            game.mapGenerator.GenerateMap(game.CurrentTileFactory);
 
             game.mapLogicAdapter.BuildLogicMap(
                 game.mapGenerator.width,

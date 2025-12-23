@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using DPBomberman.Controllers; // EnemyController namespace'in buysa kalsın; değilse kaldır.
 
 public class EnemySpawnerRandom : MonoBehaviour
 {
@@ -48,7 +49,6 @@ public class EnemySpawnerRandom : MonoBehaviour
         int used = ground.GetUsedTilesCount();
         Debug.Log($"[EnemySpawnerRandom] Ground ready. usedTiles={used}");
 
-        // Eğer hala 0 ise, kesin yanlış tilemap'e bakıyoruz veya map generator hiç çizmedi
         if (used == 0)
         {
             Debug.LogError("[EnemySpawnerRandom] Ground usedTiles STILL 0. MapGenerator ground'a çizmiyor veya yanlış tilemap seçili!");
@@ -65,14 +65,32 @@ public class EnemySpawnerRandom : MonoBehaviour
         Debug.Log($"[EnemySpawnerRandom] Spawn result: {spawned}/{enemyCount}");
     }
 
-    bool TrySpawnOne()
+    private bool TrySpawnOne()
     {
         var b = ground.cellBounds;
 
+        // Kenarları dışarıda bırak (0 ve max kenar duvar)
+        int minX = b.xMin + 1;
+        int maxX = b.xMax - 2;
+        int minY = b.yMin + 1;
+        int maxY = b.yMax - 2;
+
+        // bounds beklenmedikse güvenlik
+        if (minX > maxX || minY > maxY)
+        {
+            Debug.LogError("[EnemySpawnerRandom] Invalid bounds after inner clamp. Check ground tilemap bounds.");
+            return false;
+        }
+
+        // Player cell (varsa)
+        Vector3Int pCell = default;
+        bool hasPlayer = player != null;
+        if (hasPlayer) pCell = ground.WorldToCell(player.position);
+
         for (int attempt = 0; attempt < maxAttemptsPerEnemy; attempt++)
         {
-            int x = Random.Range(b.xMin, b.xMax);
-            int y = Random.Range(b.yMin, b.yMax);
+            int x = Random.Range(minX, maxX + 1);
+            int y = Random.Range(minY, maxY + 1);
             Vector3Int cell = new(x, y, 0);
 
             if (!ground.HasTile(cell)) continue;
@@ -80,18 +98,49 @@ public class EnemySpawnerRandom : MonoBehaviour
             if (wallsBreakable && wallsBreakable.HasTile(cell)) continue;
             if (wallsHard && wallsHard.HasTile(cell)) continue;
 
-            if (player)
+            // Spawn zone (köşeler + 2 komşu) düşman için yasak
+            if (IsSpawnZone(cell, b)) continue;
+
+            // Player'a çok yakın olmasın
+            if (hasPlayer)
             {
-                var pCell = ground.WorldToCell(player.position);
                 int dist = Mathf.Abs(cell.x - pCell.x) + Mathf.Abs(cell.y - pCell.y);
                 if (dist < minManhattanDistanceFromPlayer) continue;
             }
 
             Vector3 pos = ground.GetCellCenterWorld(cell);
-            Instantiate(enemyPrefab, pos, Quaternion.identity);
+
+            Debug.Log($"[EnemySpawnerRandom] Spawning enemy at cell={cell} worldPos={pos}");
+
+            // Instantiate
+            var go = Instantiate(enemyPrefab, pos, Quaternion.identity);
+
+            // EnemyController varsa tilemap'leri inject et (temaya göre doğru tilemap refs)
+            var enemyCtrl = go.GetComponent<DPBomberman.Controllers.EnemyController>();
+            if (enemyCtrl != null)
+            {
+                enemyCtrl.InjectTilemaps(ground, wallsSolid, wallsBreakable, wallsHard);
+            }
+
             return true;
         }
 
         return false;
+    }
+
+    // MapGenerator ile aynı spawn zone mantığı: 4 köşe + 2 komşu
+    private bool IsSpawnZone(Vector3Int cell, BoundsInt b)
+    {
+        int xMin = b.xMin;
+        int yMin = b.yMin;
+        int xMax = b.xMax - 1;
+        int yMax = b.yMax - 1;
+
+        bool bottomLeft = (cell.x == xMin + 1 && cell.y == yMin + 1) || (cell.x == xMin + 1 && cell.y == yMin + 2) || (cell.x == xMin + 2 && cell.y == yMin + 1);
+        bool bottomRight = (cell.x == xMax - 1 && cell.y == yMin + 1) || (cell.x == xMax - 1 && cell.y == yMin + 2) || (cell.x == xMax - 2 && cell.y == yMin + 1);
+        bool topLeft = (cell.x == xMin + 1 && cell.y == yMax - 1) || (cell.x == xMin + 1 && cell.y == yMax - 2) || (cell.x == xMin + 2 && cell.y == yMax - 1);
+        bool topRight = (cell.x == xMax - 1 && cell.y == yMax - 1) || (cell.x == xMax - 1 && cell.y == yMax - 2) || (cell.x == xMax - 2 && cell.y == yMax - 1);
+
+        return bottomLeft || bottomRight || topLeft || topRight;
     }
 }

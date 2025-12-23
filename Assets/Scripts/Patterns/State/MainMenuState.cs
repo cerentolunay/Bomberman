@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DPBomberman.Patterns.State
 {
@@ -8,7 +9,7 @@ namespace DPBomberman.Patterns.State
         private readonly GameStateMachine machine;
 
         public MainMenuState(GameManager game, GameStateMachine machine)
-        {   
+        {
             this.game = game;
             this.machine = machine;
         }
@@ -16,21 +17,42 @@ namespace DPBomberman.Patterns.State
         public void Enter()
         {
             Debug.Log("[STATE] Enter MainMenu");
-            // TODO (Faz 2+): UI aç, menü inputlarýný aktif et
+
+            // Güvenlik: Pause/GameOver'dan geldiysek oyun akmasýn diye býrakýlan þeyleri temizle
+            Time.timeScale = 1f;
+
+            var ui = Object.FindFirstObjectByType<UIManager>();
+            if (ui != null)
+            {
+                ui.HidePause();
+                ui.HideGameOver();
+            }
+
+            // Eðer zaten MainMenu sahnesinde deðilsek, sahneyi yükle
+            var sceneName = SceneManager.GetActiveScene().name.ToLowerInvariant();
+            if (!sceneName.Contains("mainmenu"))
+            {
+                game.GoToMainMenu();
+                return;
+            }
+
+            // Buraya geliyorsa zaten MainMenu sahnesindesin.
+            // Ýstersen burada MainMenu UI enable/disable iþleri yapýlýr.
         }
 
         public void Exit()
         {
             Debug.Log("[STATE] Exit MainMenu");
-            // TODO (Faz 2+): UI kapat, temizle
         }
 
         public void Tick(float deltaTime)
         {
-            // Test amaçlý: P basýnca oyuna geç
+            // Test amaçlý P ile oyuna geçmek istiyorsan:
             if (Input.GetKeyDown(KeyCode.P))
             {
-                machine.ChangeState(new PlayingState(game, machine));
+                // Direkt state deðiþtirmek yerine sahne yüklet:
+                // (OnSceneLoaded zaten PlayingState'e geçiriyor)
+                game.StartGame(game.selectedTheme);
             }
         }
     }

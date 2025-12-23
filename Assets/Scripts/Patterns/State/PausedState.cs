@@ -16,29 +16,39 @@ namespace DPBomberman.Patterns.State
         public void Enter()
         {
             Debug.Log("[STATE] Enter Paused");
-            // TODO (Faz 2+): Time.timeScale = 0 veya input kilitleme
+
+            // UI aç
+            if (game.uiManager == null)
+                Debug.LogError("[PausedState] game.uiManager is NULL (BindSceneReferences çalýþtý mý?)");
+            else
+                Debug.Log($"[PausedState] UIManager={game.uiManager.name} id={game.uiManager.GetInstanceID()}");
+
+            game.uiManager?.ShowPause();
+
+            // oyunu durdur
             Time.timeScale = 0f;
         }
 
         public void Exit()
         {
             Debug.Log("[STATE] Exit Paused");
-            // TODO (Faz 2+): Time.timeScale = 1
+
+            // UI kapat
+            game.uiManager?.HidePause();
+
+            // oyunu devam ettir
             Time.timeScale = 1f;
         }
 
         public void Tick(float deltaTime)
         {
-            // Test amaçlý: ESC tekrar basýnca oyuna dön
             if (Input.GetKeyDown(KeyCode.Escape))
-            {
                 machine.ChangeState(new PlayingState(game, machine));
-            }
 
-            // Test amaçlý: M ile menüye dön
             if (Input.GetKeyDown(KeyCode.M))
             {
-                machine.ChangeState(new MainMenuState(game, machine));
+                Time.timeScale = 1f;
+                game.GoToMainMenu();
             }
         }
     }

@@ -18,6 +18,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Level_City.unity
     guid: 333d4064fdbb20d4781a2dccb6c7e1fe
   m_configObjects:
+    com.unity.input.settings: {fileID: 11400000, guid: 29c36cf1b5d311c449f35703550acfcb, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: f899b3c64947f4a4b8a9b9690c40593b, type: 2}
   m_UseUCBPForAssetBundles: 0

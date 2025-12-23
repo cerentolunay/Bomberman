@@ -58,13 +58,27 @@ namespace DPBomberman.Controllers
                 return;
             }
 
+            // Baþlangýç hücresi
             currentCell = groundTilemap.WorldToCell(transform.position);
+
+            // (0,0) gibi kenara düþtüyse haritanýn iç bounds'una çek (kenar duvar riskini azaltýr)
+            currentCell = ClampToInnerBounds(currentCell);
+
+            // Spawn zone’a denk geldiyse (player spawn civarý), rastgele güvenli hücreye kaç
+            if (IsCornerSpawnZone(currentCell))
+            {
+                currentCell = FindRandomFreeCell();
+            }
+
             SnapToCell(currentCell);
 
             // Spawn duvarýn üstündeyse yakýndaki boþ hücreye kaydýr
-            TryRelocateIfBlocked();
-
-            Debug.Log($"[EnemyController] Using groundTilemap: {groundTilemap.name}, startCell={currentCell}");
+            if (!TryRelocateIfBlocked())
+            {
+                // Komþu yoksa da rastgele güvenli hücreye kaç
+                currentCell = FindRandomFreeCell();
+                SnapToCell(currentCell);
+            }
         }
 
         private void Update()
@@ -148,6 +162,73 @@ namespace DPBomberman.Controllers
 
             return false;
         }
+
+        /// <summary>
+        /// Enemy'nin baþlangýç hücresini tilemap bounds içinde ve kenarlardan uzak tutar.
+        /// </summary>
+        private Vector3Int ClampToInnerBounds(Vector3Int cell)
+        {
+            if (groundTilemap == null) return cell;
+
+            BoundsInt b = groundTilemap.cellBounds;
+
+            // Kenarlarý dýþarýda býrak: +1 / -2
+            int minX = b.xMin + 1;
+            int maxX = b.xMax - 2;
+            int minY = b.yMin + 1;
+            int maxY = b.yMax - 2;
+
+            cell.x = Mathf.Clamp(cell.x, minX, maxX);
+            cell.y = Mathf.Clamp(cell.y, minY, maxY);
+
+            return cell;
+        }
+
+        private bool IsCornerSpawnZone(Vector3Int cell)
+        {
+            if (groundTilemap == null) return false;
+
+            BoundsInt b = groundTilemap.cellBounds;
+
+            int xMin = b.xMin;
+            int yMin = b.yMin;
+            int xMax = b.xMax - 1;
+            int yMax = b.yMax - 1;
+
+            // Spawn zone hücreleri (MapGenerator ile ayný mantýk): köþe + 2 komþu
+            bool bottomLeft = (cell.x == xMin + 1 && cell.y == yMin + 1) || (cell.x == xMin + 1 && cell.y == yMin + 2) || (cell.x == xMin + 2 && cell.y == yMin + 1);
+            bool bottomRight = (cell.x == xMax - 1 && cell.y == yMin + 1) || (cell.x == xMax - 1 && cell.y == yMin + 2) || (cell.x == xMax - 2 && cell.y == yMin + 1);
+            bool topLeft = (cell.x == xMin + 1 && cell.y == yMax - 1) || (cell.x == xMin + 1 && cell.y == yMax - 2) || (cell.x == xMin + 2 && cell.y == yMax - 1);
+            bool topRight = (cell.x == xMax - 1 && cell.y == yMax - 1) || (cell.x == xMax - 1 && cell.y == yMax - 2) || (cell.x == xMax - 2 && cell.y == yMax - 1);
+
+            return bottomLeft || bottomRight || topLeft || topRight;
+        }
+
+        private Vector3Int FindRandomFreeCell(int attempts = 200)
+        {
+            BoundsInt b = groundTilemap.cellBounds;
+
+            int minX = b.xMin + 1;
+            int maxX = b.xMax - 2;
+            int minY = b.yMin + 1;
+            int maxY = b.yMax - 2;
+
+            for (int i = 0; i < attempts; i++)
+            {
+                int x = Random.Range(minX, maxX + 1);
+                int y = Random.Range(minY, maxY + 1);
+                var cell = new Vector3Int(x, y, 0);
+
+                if (IsCornerSpawnZone(cell)) continue;
+                if (IsBlocked(cell)) continue;
+
+                return cell;
+            }
+
+            // Bulamazsa mevcut cell'i döndür (en azýndan crash olmaz)
+            return currentCell;
+        }
+
 
         private bool TryRelocateIfBlocked()
         {
