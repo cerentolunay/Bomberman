@@ -2346,6 +2346,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e5f6ee85c0d94f44aaf56272aa1da1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCollisionKill
+  graceSeconds: 0.3
+  verboseLogs: 0
 --- !u!114 &1793453129
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2426,6 +2428,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   gameOverPanel: {fileID: 2133411612}
+  pausePanel: {fileID: 0}
 --- !u!1 &1942499707
 GameObject:
   m_ObjectHideFlags: 0
@@ -2779,10 +2782,10 @@ MonoBehaviour:
   width: 20
   height: 15
   seed: 123
-  groundTile: {fileID: 11400000, guid: 8f53c3c57fea55a4d9415e74977d2032, type: 2}
-  solidTile: {fileID: 11400000, guid: 714a39f314e66fe45a5c9b083975cfc3, type: 2}
-  breakableTile: {fileID: 11400000, guid: 9d56e88cd1388964dab751b59fa5931f, type: 2}
-  hardTile: {fileID: 11400000, guid: 918cfcd5efe4db64690c606e45a8ecfe, type: 2}
+  groundTile: {fileID: 11400000, guid: 56d1a6b422175bf40b489c54f9b753a4, type: 2}
+  solidTile: {fileID: 11400000, guid: 0f4a34d8e4494734aa694cdc72f9c88c, type: 2}
+  breakableTile: {fileID: 11400000, guid: 8661e4d483247c240a63269a7717828f, type: 2}
+  hardTile: {fileID: 11400000, guid: ea24d88bc802bfe4abcfca6a8435badc, type: 2}
   groundTilemap: {fileID: 434542527}
   solidTilemap: {fileID: 65104712}
   breakableTilemap: {fileID: 1216769450}
