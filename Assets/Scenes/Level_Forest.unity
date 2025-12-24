@@ -960,7 +960,7 @@ MonoBehaviour:
   solidTilemap: {fileID: 878160726}
   breakableTilemap: {fileID: 2089320754}
   hardTilemap: {fileID: 96886199}
-  bombSystem: {fileID: 0}
+  bombSystem: {fileID: 3331919749283434932}
   explosionTracker: {fileID: 3331919749283434924}
   actor: {fileID: 0}
   stepDuration: 0.12
@@ -1003,6 +1003,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e5f6ee85c0d94f44aaf56272aa1da1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCollisionKill
+  graceSeconds: 0.3
+  verboseLogs: 0
 --- !u!114 &851707190
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2187,6 +2189,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   gameOverPanel: {fileID: 832576508}
+  pausePanel: {fileID: 0}
+--- !u!114 &2048689499 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2935175526945282220, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
+  m_PrefabInstance: {fileID: 8202878061503900268}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68cf2e04616524f4e8f88b17db6b546f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIManager
 --- !u!1 &2069231131
 GameObject:
   m_ObjectHideFlags: 0
@@ -2583,6 +2597,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 851707184}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2122081539 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7829453770482855061, guid: fd21eb7954fa1ad449927287115456d8, type: 3}
+  m_PrefabInstance: {fileID: 4798085588737681864}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67778549768a3a24d83ed55e1cccbf93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DPBomberman.InputSystem.InputHandler
 --- !u!114 &3331919749283434924 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6911654856905014208, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
@@ -2616,6 +2641,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c84154efa412243488176e50fbbdd806, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
+--- !u!114 &3331919749283434932 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1009191517140602972, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
+  m_PrefabInstance: {fileID: 8202878061503900268}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c104b13eea3196845ae879b94377ab19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DPBomberman.Controllers.BombSystem
 --- !u!1001 &4798085588737681864
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2672,6 +2708,10 @@ PrefabInstance:
       propertyPath: player
       value: 
       objectReference: {fileID: 851707187}
+    - target: {fileID: 9146333636336456124, guid: fd21eb7954fa1ad449927287115456d8, type: 3}
+      propertyPath: uiManager
+      value: 
+      objectReference: {fileID: 2048689499}
     - target: {fileID: 9146333636336456124, guid: fd21eb7954fa1ad449927287115456d8, type: 3}
       propertyPath: mapGenerator
       value: 
@@ -2833,6 +2873,22 @@ PrefabInstance:
       propertyPath: wallsBreakable
       value: 
       objectReference: {fileID: 2089320754}
+    - target: {fileID: 5380901279278167691, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
+      propertyPath: uiManager
+      value: 
+      objectReference: {fileID: 2048689499}
+    - target: {fileID: 5380901279278167691, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
+      propertyPath: inputHandler
+      value: 
+      objectReference: {fileID: 2122081539}
+    - target: {fileID: 5380901279278167691, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
+      propertyPath: mapGenerator
+      value: 
+      objectReference: {fileID: 3331919749283434930}
+    - target: {fileID: 5380901279278167691, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
+      propertyPath: mapLogicAdapter
+      value: 
+      objectReference: {fileID: 3331919749283434929}
     - target: {fileID: 6911654856905014208, guid: 8241139a8f165774fb57b3ca0335b2ba, type: 3}
       propertyPath: groundTilemap
       value: 

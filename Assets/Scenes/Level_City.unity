@@ -149,6 +149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   gameOverPanel: {fileID: 1912845805}
+  pausePanel: {fileID: 0}
 --- !u!4 &11005620
 Transform:
   m_ObjectHideFlags: 0
@@ -1251,6 +1252,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e5f6ee85c0d94f44aaf56272aa1da1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCollisionKill
+  graceSeconds: 0.3
+  verboseLogs: 0
 --- !u!114 &783523221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2839,6 +2842,10 @@ PrefabInstance:
       propertyPath: mapGenerator
       value: 
       objectReference: {fileID: 564870850}
+    - target: {fileID: 9146333636336456124, guid: fd21eb7954fa1ad449927287115456d8, type: 3}
+      propertyPath: selectedTheme
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 9146333636336456124, guid: fd21eb7954fa1ad449927287115456d8, type: 3}
       propertyPath: mapLogicAdapter
       value: 
