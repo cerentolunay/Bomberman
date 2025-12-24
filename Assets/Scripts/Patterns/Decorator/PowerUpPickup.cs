@@ -16,13 +16,11 @@ public class PowerUpPickup : MonoBehaviour
     public PowerUpType type;
     public int intBonus = 1;
 
-    [Header("Pickup")]
-    public KeyCode pickupKey = KeyCode.E;
+    // ARTIK TUŞA GEREK YOK
+    // public KeyCode pickupKey = KeyCode.E; 
 
     private Vector3Int registeredCell;
     private bool isRegistered;
-
-    private PlayerStatsHolder touchingHolder;
     private bool picked;
 
     // MapGenerator/Registry çağırır
@@ -38,37 +36,24 @@ public class PowerUpPickup : MonoBehaviour
         if (col) col.isTrigger = true;
     }
 
-    private void Update()
-    {
-        if (picked) return;
-
-        if (touchingHolder != null && Input.GetKeyDown(pickupKey))
-        {
-            Pick(touchingHolder);
-        }
-    }
+    // UPDATE FONKSİYONUNU SİLDİK (Tuş beklemiyoruz)
 
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (picked) return;
 
-        // Tag’e bağlı kalma
-        var holder = other.GetComponentInParent<PlayerStatsHolder>();
-        if (holder == null) holder = other.GetComponent<PlayerStatsHolder>();
-        if (holder == null) return;
-
-        touchingHolder = holder;
-        // Debug.Log($"[PowerUpPickup] In range: {type}");
-    }
-
-    private void OnTriggerExit2D(Collider2D other)
-    {
+        // PlayerStatsHolder'ı bulmaya çalış
         var holder = other.GetComponentInParent<PlayerStatsHolder>();
         if (holder == null) holder = other.GetComponent<PlayerStatsHolder>();
 
-        if (holder != null && holder == touchingHolder)
-            touchingHolder = null;
+        // Eğer çarpan şey Player ise ve StatsHolder'ı varsa:
+        if (holder != null)
+        {
+            Pick(holder); // DİREKT AL!
+        }
     }
+
+    // OnTriggerExit SİLİNDİ (Artık bekleme yok)
 
     private void Pick(PlayerStatsHolder holder)
     {
@@ -76,19 +61,23 @@ public class PowerUpPickup : MonoBehaviour
 
         Apply(holder);
 
-        // Registry temizliği (Destroy'dan önce)
+        // Registry temizliği
         if (isRegistered)
         {
             PowerUpRegistry.Unregister(registeredCell);
             isRegistered = false;
         }
 
-        // tekrar tetiklenmesin
+        // Collider kapat
         var col = GetComponent<Collider2D>();
         if (col) col.enabled = false;
 
-        // ✅ SADECE bu powerup prefabını sil
-        Destroy(gameObject);
+        // Görseli kapat (SpriteRenderer) - Ses çalacaksan destroy hemen olmamalı
+        var sprite = GetComponent<SpriteRenderer>();
+        if (sprite) sprite.enabled = false;
+
+        // Obje siliniyor
+        Destroy(gameObject, 0.1f); // Ses varsa biraz gecikmeli silinebilir
     }
 
     private void Apply(PlayerStatsHolder holder)
@@ -97,21 +86,23 @@ public class PowerUpPickup : MonoBehaviour
         {
             case PowerUpType.Speed:
                 holder.ApplySpeedBoostTimed(2.0f, 6f);
+                Debug.Log("HIZLANDI!");
                 break;
 
             case PowerUpType.BombPower:
                 holder.ApplyBombPower(intBonus);
+                Debug.Log("GÜÇLENDİ!");
                 break;
 
             case PowerUpType.BombCount:
                 holder.ApplyBombCount(intBonus);
+                Debug.Log("BOMBA ARTTI!");
                 break;
         }
     }
 
     private void OnDestroy()
     {
-        // Eğer herhangi bir sebeple Pick çalışmadan destroy olduysa
         if (isRegistered)
             PowerUpRegistry.Unregister(registeredCell);
     }
