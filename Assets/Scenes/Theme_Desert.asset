@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Theme_Desert
   m_EditorClassIdentifier: Assembly-CSharp::DPBomberman.Patterns.Factory.WallTileThemeFactorySO
   theme: 1
-  groundTile: {fileID: 11400000, guid: 8f53c3c57fea55a4d9415e74977d2032, type: 2}
-  solidTile: {fileID: 11400000, guid: 714a39f314e66fe45a5c9b083975cfc3, type: 2}
-  breakableTile: {fileID: 11400000, guid: 9d56e88cd1388964dab751b59fa5931f, type: 2}
-  hardTile: {fileID: 11400000, guid: 918cfcd5efe4db64690c606e45a8ecfe, type: 2}
+  groundTile: {fileID: 11400000, guid: 6c2dc518cc5d5df4f8f83690362a897a, type: 2}
+  solidTile: {fileID: 11400000, guid: 4f760e71818f5924c9a40ea053964e91, type: 2}
+  breakableTile: {fileID: 11400000, guid: 4e5b0676bb235824a8e9ce6129a62102, type: 2}
+  hardTile: {fileID: 11400000, guid: 86bfa8a13ae619744bd8942547a7cf9b, type: 2}
