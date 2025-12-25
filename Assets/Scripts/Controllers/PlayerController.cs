@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
+using Unity.Netcode;
 using UnityEngine.Tilemaps;
 using Patterns.Decorator;
 
 namespace DPBomberman.Controllers
 {
-    public class PlayerController : MonoBehaviour
+    public class PlayerController : NetworkBehaviour
     {
         [Header("Grid Movement")]
         public Tilemap groundTilemap;
@@ -37,21 +38,42 @@ namespace DPBomberman.Controllers
 
         private void Start()
         {
-            baseStepDuration = stepDuration;
+            // Sadece bu karakterin sahibiysen (senin karakterinse) bu işlemleri yap
+            if (!IsOwner) return;
 
+            // --- OTOMATİK BULMA SİSTEMİ ---
+            // Eğer kutular boşsa (ki prefabdan doğduğu için boş olacak), isimle bulalım:
             if (groundTilemap == null)
-            {
-                Debug.LogError("[PlayerController] groundTilemap is NULL. Assign in Inspector.");
-                enabled = false;
-                return;
-            }
+                groundTilemap = GameObject.Find("Ground")?.GetComponent<UnityEngine.Tilemaps.Tilemap>();
 
-            currentCell = groundTilemap.WorldToCell(transform.position);
-            SnapToCell(currentCell);
+            if (solidTilemap == null)
+                solidTilemap = GameObject.Find("Walls_Solid")?.GetComponent<UnityEngine.Tilemaps.Tilemap>();
+
+            if (breakableTilemap == null)
+                breakableTilemap = GameObject.Find("Walls_Breakable")?.GetComponent<UnityEngine.Tilemaps.Tilemap>();
+
+            if (hardTilemap == null)
+                hardTilemap = GameObject.Find("Walls_Hard")?.GetComponent<UnityEngine.Tilemaps.Tilemap>();
+
+            // BombSystem ve Actor zaten Awake içinde GetComponent ile kendisini buluyor, onlara dokunma.
+
+            // Pozisyonu hücreye sabitle
+            if (groundTilemap != null)
+            {
+                currentCell = groundTilemap.WorldToCell(transform.position);
+                SnapToCell(currentCell);
+            }
+            else
+            {
+                Debug.LogError("DİKKAT: Sahnede 'Ground' isminde bir Tilemap bulunamadı!");
+            }
         }
 
         private void Update()
         {
+            // Sadece bu karakterin sahibiysen Update çalışsın
+            if (!IsOwner) return; // <--- EKLE
+
             // Input YOK: sadece ölüm/danger kontrolü var
             if (actor != null && actor.IsDead) return;
 
@@ -62,9 +84,11 @@ namespace DPBomberman.Controllers
             }
         }
 
-        // ✅ Command'lerin çağıracağı giriş noktası
+        // TryMove ve TryPlaceBomb kısımları Command Pattern ile dışarıdan (InputHandler'dan)
+        // çağırıldığı için InputHandler'da da "IsOwner" kontrolü yapmamız gerekecek.
         public void TryMove(Vector3Int dir)
         {
+            if (!IsOwner) return; // <--- EKLE
             if (actor != null && actor.IsDead) return;
             if (isMoving) return;
             if (dir == Vector3Int.zero) return;
@@ -78,6 +102,8 @@ namespace DPBomberman.Controllers
         // ✅ Command'lerin çağıracağı giriş noktası
         public void TryPlaceBomb()
         {
+            if (!IsOwner) return;
+
             if (actor != null && actor.IsDead) return;
             bombSystem?.TryPlaceBomb();
         }
