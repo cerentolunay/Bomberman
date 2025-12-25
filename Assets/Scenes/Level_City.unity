@@ -144,6 +144,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2469775366788186913}
     - target: {fileID: 2062231011363675974, guid: 54557fa6b807bae4681a1f0942e15892, type: 3}
+      propertyPath: selectedTheme
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2062231011363675974, guid: 54557fa6b807bae4681a1f0942e15892, type: 3}
       propertyPath: mapLogicAdapter
       value: 
       objectReference: {fileID: 5258817469259691950}
@@ -586,7 +590,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6764097995184156028}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c84154efa412243488176e50fbbdd806, type: 3}
   m_Name: 

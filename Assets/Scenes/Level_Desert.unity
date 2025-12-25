@@ -144,6 +144,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8248259017208364234}
     - target: {fileID: 2062231011363675974, guid: 54557fa6b807bae4681a1f0942e15892, type: 3}
+      propertyPath: selectedTheme
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2062231011363675974, guid: 54557fa6b807bae4681a1f0942e15892, type: 3}
       propertyPath: mapLogicAdapter
       value: 
       objectReference: {fileID: 521180959722718301}
@@ -2637,10 +2641,10 @@ MonoBehaviour:
   width: 20
   height: 15
   seed: 123
-  groundTile: {fileID: 11400000, guid: 8f53c3c57fea55a4d9415e74977d2032, type: 2}
-  solidTile: {fileID: 11400000, guid: 714a39f314e66fe45a5c9b083975cfc3, type: 2}
-  breakableTile: {fileID: 11400000, guid: 9d56e88cd1388964dab751b59fa5931f, type: 2}
-  hardTile: {fileID: 11400000, guid: 918cfcd5efe4db64690c606e45a8ecfe, type: 2}
+  groundTile: {fileID: 0}
+  solidTile: {fileID: 0}
+  breakableTile: {fileID: 0}
+  hardTile: {fileID: 0}
   groundTilemap: {fileID: 543128581173797775}
   solidTilemap: {fileID: 1840855889814971910}
   breakableTilemap: {fileID: 7432345628646723666}
