@@ -1280,6 +1280,7 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+<<<<<<< Updated upstream
 --- !u!1001 &5845685266944817468
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1406,6 +1407,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DPBomberman.Controllers.DamageableActor
   isPlayer: 0
+=======
+>>>>>>> Stashed changes
 --- !u!1001 &5893363900890323248
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1968,7 +1971,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 3228200183357439491}
   - {fileID: 5154152175084050386}
-  - {fileID: 5845685266944817468}
   - {fileID: 6337898906774967616}
   - {fileID: 3307929876349157194}
   - {fileID: 7578955689177047349}
