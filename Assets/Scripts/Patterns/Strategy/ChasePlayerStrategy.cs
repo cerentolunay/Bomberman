@@ -1,3 +1,4 @@
+//düþmanlarýn oyuncuyu aktif olarak kovalamasýný saðlayan Chase Player AI davranýþýný temsil ediyor
 using UnityEngine;
 
 namespace DPBomberman.Patterns.Strategy

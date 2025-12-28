@@ -142,7 +142,8 @@ namespace DPBomberman.Patterns.Strategy
                 Time.deltaTime
             );
 
-            Vector2Int move = strategy.GetNextMove(ctx);
+            Vector2Int move = strategy.GetNextMove(ctx); // enemynin bir sonraki hamlesi hesaplanıyo
+
             
             // Strateji (0,0) dönerse hareket etmiyor demektir, rastgele bir yere gitmeye zorla
             if (move == Vector2Int.zero) return PickRandomDirection();
