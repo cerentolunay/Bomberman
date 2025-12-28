@@ -1,11 +1,15 @@
-# Bomberman — Online Multiplayer Game
+# Bomberman â€” Online Multiplayer Game
 
 Bomberman-inspired game developed using **Unity and C#**, featuring both
-**single-player** and **online multiplayer (host–client)** gameplay.
+**single-player** and **online multiplayer (hostâ€“client)** gameplay.
 
 The project focuses on building a **clean, extensible architecture**
 while implementing classic Bomberman mechanics such as grid-based movement,
 bomb placement, destructible environments, and power-ups.
+
+---
+
+ðŸ“„ **Project Report:** [PDF](doc/Bomberman_report.pdf)
 
 ---
 
@@ -41,7 +45,7 @@ This project recreates the core gameplay loop of the classic Bomberman series:
 - **Single-player mode**
   - AI-controlled enemies with interchangeable behaviors
 - **Multiplayer mode**
-  - Host–client architecture
+  - Hostâ€“client architecture
   - Authoritative host for gameplay validation
 - **Player data persistence**
   - Match statistics
@@ -53,7 +57,7 @@ This project recreates the core gameplay loop of the classic Bomberman series:
 
 - **Game Engine:** Unity
 - **Programming Language:** C#
-- **Networking:** Host–Client multiplayer model
+- **Networking:** Hostâ€“Client multiplayer model
 - **Database:** SQLite
 
 ---
@@ -83,16 +87,16 @@ This structure keeps gameplay logic independent from presentation details.
 The project applies several design patterns to keep the codebase modular
 and extensible.
 
-- **Factory** – Theme-based wall and map generation
-- **Decorator** – Dynamic power-up system
-- **Strategy** – Interchangeable enemy AI behaviors
-- **State** – Game flow management (menu, play, pause, game over)
-- **Command** – Encapsulated player input actions
-- **Template Method** – Structured map generation workflow
-- **Repository** – Abstracted SQLite data access
-- **Singleton** – Global game services
-- **Facade** – Simplified access to core subsystems
-- **Adapter** – Logical grid abstraction over Unity Tilemaps
+- **Factory** â€“ Theme-based wall and map generation
+- **Decorator** â€“ Dynamic power-up system
+- **Strategy** â€“ Interchangeable enemy AI behaviors
+- **State** â€“ Game flow management (menu, play, pause, game over)
+- **Command** â€“ Encapsulated player input actions
+- **Template Method** â€“ Structured map generation workflow
+- **Repository** â€“ Abstracted SQLite data access
+- **Singleton** â€“ Global game services
+- **Facade** â€“ Simplified access to core subsystems
+- **Adapter** â€“ Logical grid abstraction over Unity Tilemaps
 
 ---
 
