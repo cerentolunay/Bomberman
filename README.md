@@ -112,27 +112,26 @@ and extensible.
 4.Press Play to start.
 
 ## Multiplayer
-One player starts the session as Host
-Other players join as Clients
-The host is responsible for:
-Validating player actions
-Synchronizing bombs and explosions
-Managing game state transitions
+- One player starts the session as Host
+- Other players join as Clients
+- The host is responsible for:
+- Validating player actions
+- Synchronizing bombs and explosions
+- Managing game state transitions
 
 ## Controls
-Default controls (may vary by configuration):
-Move: W / A / S / D or Arrow Keys
-Place Bomb: Space
-Pause: Esc
+- Default controls (may vary by configuration):
+- Move: W / A / S / D or Arrow Keys
+- Place Bomb: Space
+- Pause: Esc
 
 ## Data Storage
 
-The project uses SQLite for local storage of:
-Player profiles
-Match statistics
-Leaderboard data
-All database interactions are handled through repository classes,
-keeping persistence logic separate from gameplay logic.
+- The project uses SQLite for local storage of:
+- Player profiles
+- Match statistics
+- Leaderboard data
+- All database interactions are handled through repository classes, keeping persistence logic separate from gameplay logic.
 
 ## Project Structure
 ```bash
@@ -147,6 +146,5 @@ keeping persistence logic separate from gameplay logic.
 
    ```
 ## Notes
-The project is designed to be easily extensible.
-Additional game modes, themes, or AI strategies can be added
-without modifying existing core systems.
+- The project is designed to be easily extensible.
+- Additional game modes, themes, or AI strategies can be added without modifying existing core systems.
